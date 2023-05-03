@@ -88,7 +88,7 @@ if args.language == "en":
     train_list, val_list = split("/aicity/data/CUHK-PEDES/caption_all.json")
     train_dataset = TIPCB_data(train_list, tokenizer, args)
     val_dataset = TIPCB_data(val_list, tokenizer, args, train=False)
-elif # removed for Thai language
+# elif # removed for Thai language
 
 # with open("/aicity/TIPCB/data/BERT_en_original/BERT_id_train_64_new.npz", "rb") as f:
 #     train = pickle.load(f)
