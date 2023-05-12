@@ -8,75 +8,78 @@ import torch.nn.functional as F
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from pytorch_lightning import loggers as pl_loggers
-from transformers import BertModel, RobertaModel
+from transformers import AutoModel
 from CMPM import Loss
 import torch.optim as optim
 from test_utils import test_map
 from scheduler import GradualWarmupScheduler # https://github.com/ildoonet/pytorch-gradual-warmup-lr
 
-# class ResNet_image_50(nn.Module):
-#     def __init__(self):
-#         super(ResNet_image_50, self).__init__()
-#         resnet50 = models.resnet50(pretrained=True)
-#         resnet50.layer4[0].downsample[0].stride = (1, 1)
-#         resnet50.layer4[0].conv2.stride = (1, 1)
-#         self.base1 = nn.Sequential(
-#             resnet50.conv1,
-#             resnet50.bn1,
-#             resnet50.relu,
-#             resnet50.maxpool,
-#             resnet50.layer1,  # 256 64 32
-#         )
-#         self.base2 = nn.Sequential(
-#             resnet50.layer2,  # 512 32 16
-#         )
-#         self.base3 = nn.Sequential(
-#             resnet50.layer3,  # 1024 16 8
-#         )
-#         self.base4 = nn.Sequential(
-#             resnet50.layer4  # 2048 16 8
-#         )
-#
-#     def forward(self, x):
-#         x1 = self.base1(x)
-#         x2 = self.base2(x1)
-#         x3 = self.base3(x2)
-#         x4 = self.base4(x3)
-#         return x1, x2, x3, x4
-
-#效率网
 class ResNet_image_50(nn.Module):
     def __init__(self):
         super(ResNet_image_50, self).__init__()
-        efficientnet = models.efficientnet_b4(True)
-        efficientnet.features[6][0].block[1][0].stride = (1,1)
+        resnet50 = models.resnet50(pretrained=True)
+        resnet50.layer4[0].downsample[0].stride = (1, 1)
+        resnet50.layer4[0].conv2.stride = (1, 1)
         self.base1 = nn.Sequential(
-            efficientnet.features[0],
-            efficientnet.features[1],
-            efficientnet.features[2],
+            resnet50.conv1,
+            resnet50.bn1,
+            resnet50.relu,
+            resnet50.maxpool,
+            resnet50.layer1,  # 256 64 32
         )
         self.base2 = nn.Sequential(
-            efficientnet.features[3],
+            resnet50.layer2,  # 512 32 16
         )
         self.base3 = nn.Sequential(
-            efficientnet.features[4],
-            efficientnet.features[5],
+            resnet50.layer3,  # 1024 16 8
         )
         self.base4 = nn.Sequential(
-            efficientnet.features[6],
-            efficientnet.features[7],
-            efficientnet.features[8],
+            resnet50.layer4  # 2048 16 8
         )
-        self.pad3 = nn.Conv2d(136,1024,1)
-        self.pad4 = nn.Conv2d(1536,2048,1)
-    def forward(self,x):
+
+    def forward(self, x):
         x1 = self.base1(x)
         x2 = self.base2(x1)
         x3 = self.base3(x2)
         x4 = self.base4(x3)
-        x3 = self.pad3(x3)
-        x4 = self.pad4(x4)
-        return x1,x2,x3,x4
+        return x1, x2, x3, x4
+
+#效率网
+# class ResNet_image_50(nn.Module):
+#     def __init__(self):
+#         super().__init__()
+#         efficientnet = models.efficientnet_b0(True)
+#         efficientnet.features[6][0].block[1][0].stride = (1, 1)
+#         self.base1 = nn.Sequential(
+#             efficientnet.features[0],
+#             efficientnet.features[1],
+#             efficientnet.features[2],
+#         )
+#         self.base2 = nn.Sequential(
+#             efficientnet.features[3],
+#         )
+#         self.base3 = nn.Sequential(
+#             efficientnet.features[4],
+#             efficientnet.features[5][:-1],
+#         )
+#         self.feature3 = efficientnet.features[5][-1]
+#         self.base4 = nn.Sequential(
+#             efficientnet.features[6],
+#             efficientnet.features[7],
+#             efficientnet.features[8],
+#         )
+
+#     def forward(self, x):
+#         x1 = self.base1(x)
+#         x2 = self.base2(x1)
+#         x3_o = self.base3(x2)
+#         f3 = self.feature3.block[:2](x3_o)
+#         x3 = self.feature3.block[2:](f3)
+#         x3 = self.feature3.stochastic_depth(x3)
+#         x3 += x3_o
+#         x4 = self.base4(x3)
+#         return x1, x2, f3, x4
+
 
 class TIPCB(pl.LightningModule):
     def __init__(self, args, val_len = None):
@@ -88,11 +91,7 @@ class TIPCB(pl.LightningModule):
 
         self.compute_loss = Loss(args)
 
-        if args.language == "en":
-            self.text_embed = RobertaModel.from_pretrained("/aicity/finetune_LM_WCB/models/en-roberta")
-        elif args.language == "th":
-            self.text_embed = RobertaModel.from_pretrained("airesearch/wangchanberta-base-att-spm-uncased")
-            # self.text_embed = RobertaModel.from_pretrained("/aicity/finetune_LM_WCB/models/th2")
+        self.text_embed = AutoModel.from_pretrained('sentence-transformers/all-mpnet-base-v2')
         # self.text_embed.train()
         self.text_embed.eval()
         # self.BERT = True
@@ -117,7 +116,6 @@ class TIPCB(pl.LightningModule):
         with torch.no_grad():
             txt = self.text_embed(txt, attention_mask=mask)
             txt = txt[0] # (batch_size, sequence_length, hidden_size)
-            assert txt.shape[2] == 768, "shape is wrong"
             txt = txt.unsqueeze(1) # Bx1xLxH
             txt = txt.permute(0, 3, 1, 2) # BxHx1xL
 

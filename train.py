@@ -28,14 +28,14 @@ parser.add_argument('--height', type=int, default=384)
 parser.add_argument('--feature_size', type=int, default=2048)
 
 #experiment setting
-parser.add_argument('--batch_size', type=int, default=64)
-parser.add_argument('--num_epoches', type=int, default=80)
+parser.add_argument('--batch_size', type=int, default=16)
+parser.add_argument('--num_epoches', type=int, default=100)
 
 #loss function setting
 parser.add_argument('--epsilon', type=float, default=1e-8)
 
 # the root of the data folder
-parser.add_argument("--image_root_path", type=str, default="/aicity/data/CUHK-PEDES/imgs")
+parser.add_argument("--image_root_path", type=str, default='/home/palm/PycharmProjects/text_image_retrieval/CUHK-PEDES/imgs')
 
 parser.add_argument('--adam_lr', type=float, default=0.003, help='the learning rate of adam')
 parser.add_argument('--wd', type=float, default=0.00004)
@@ -84,8 +84,8 @@ pl.seed_everything(0)
 tb_logger = pl_loggers.TensorBoardLogger(args.log_dir)
 
 if args.language == "en":
-    tokenizer = AutoTokenizer.from_pretrained("roberta-base", model_max_length=args.max_length)
-    train_list, val_list = split("/aicity/data/CUHK-PEDES/caption_all.json")
+    tokenizer = AutoTokenizer.from_pretrained('sentence-transformers/all-mpnet-base-v2', model_max_length=args.max_length)
+    train_list, val_list = split('/home/palm/PycharmProjects/text_image_retrieval/CUHK-PEDES/caption_all.json')
     train_dataset = TIPCB_data(train_list, tokenizer, args)
     val_dataset = TIPCB_data(val_list, tokenizer, args, train=False)
 # elif # removed for Thai language
@@ -98,8 +98,8 @@ if args.language == "en":
 
 # train_dataset = NPZ_data(train, args)
 # val_dataset = NPZ_data(val, args, train=False)
-train_dl = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=32, shuffle=True)
-val_dl = DataLoader(val_dataset, batch_size=args.batch_size, num_workers=32, shuffle=False)
+train_dl = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=8, shuffle=True)
+val_dl = DataLoader(val_dataset, batch_size=args.batch_size, num_workers=8, shuffle=False)
 
 model = TIPCB(args, val_len=len(val_dl))
 

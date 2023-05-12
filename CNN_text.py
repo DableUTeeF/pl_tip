@@ -66,7 +66,8 @@ class ResNet_text_50(nn.Module):
         self._norm_layer = norm_layer
 
         self.inplanes = 768
-
+        x3 = 1024
+        x4 = 2048
 
         if replace_stride_with_dilation is None:
             # each element in the tuple indicates if we should replace
@@ -77,46 +78,46 @@ class ResNet_text_50(nn.Module):
                             "or a 3-element tuple, got {}".format(replace_stride_with_dilation))
 
 
-        self.conv1 = conv1x1(self.inplanes, 1024)
-        self.bn1 = norm_layer(1024)
+        self.conv1 = conv1x1(self.inplanes, x3)
+        self.bn1 = norm_layer(x3)
         self.relu = nn.ReLU(inplace=True)
 
         downsample = nn.Sequential(
-            conv1x1(1024, 2048),
-            norm_layer(2048),
+            conv1x1(x3, x4),
+            norm_layer(x4),
         )
 
         # 3, 4, 6, 3
 
         self.branch1 = nn.Sequential(
-            Bottleneck(inplanes=1024, planes=2048, width=512, downsample=downsample),
-            Bottleneck(inplanes=2048, planes=2048, width=512),
-            Bottleneck(inplanes=2048, planes=2048, width=512)
+            Bottleneck(inplanes=x3, planes=x4, width=512, downsample=downsample),
+            Bottleneck(inplanes=x4, planes=x4, width=512),
+            Bottleneck(inplanes=x4, planes=x4, width=512)
         )
         self.branch2 = nn.Sequential(
-            Bottleneck(inplanes=1024, planes=2048, width=512, downsample=downsample),
-            Bottleneck(inplanes=2048, planes=2048, width=512),
-            Bottleneck(inplanes=2048, planes=2048, width=512)
+            Bottleneck(inplanes=x3, planes=x4, width=512, downsample=downsample),
+            Bottleneck(inplanes=x4, planes=x4, width=512),
+            Bottleneck(inplanes=x4, planes=x4, width=512)
         )
         self.branch3 = nn.Sequential(
-            Bottleneck(inplanes=1024, planes=2048, width=512, downsample=downsample),
-            Bottleneck(inplanes=2048, planes=2048, width=512),
-            Bottleneck(inplanes=2048, planes=2048, width=512)
+            Bottleneck(inplanes=x3, planes=x4, width=512, downsample=downsample),
+            Bottleneck(inplanes=x4, planes=x4, width=512),
+            Bottleneck(inplanes=x4, planes=x4, width=512)
         )
         self.branch4 = nn.Sequential(
-            Bottleneck(inplanes=1024, planes=2048, width=512, downsample=downsample),
-            Bottleneck(inplanes=2048, planes=2048, width=512),
-            Bottleneck(inplanes=2048, planes=2048, width=512)
+            Bottleneck(inplanes=x3, planes=x4, width=512, downsample=downsample),
+            Bottleneck(inplanes=x4, planes=x4, width=512),
+            Bottleneck(inplanes=x4, planes=x4, width=512)
         )
         self.branch5 = nn.Sequential(
-            Bottleneck(inplanes=1024, planes=2048, width=512, downsample=downsample),
-            Bottleneck(inplanes=2048, planes=2048, width=512),
-            Bottleneck(inplanes=2048, planes=2048, width=512)
+            Bottleneck(inplanes=x3, planes=x4, width=512, downsample=downsample),
+            Bottleneck(inplanes=x4, planes=x4, width=512),
+            Bottleneck(inplanes=x4, planes=x4, width=512)
         )
         self.branch6 = nn.Sequential(
-            Bottleneck(inplanes=1024, planes=2048, width=512, downsample=downsample),
-            Bottleneck(inplanes=2048, planes=2048, width=512),
-            Bottleneck(inplanes=2048, planes=2048, width=512)
+            Bottleneck(inplanes=x3, planes=x4, width=512, downsample=downsample),
+            Bottleneck(inplanes=x4, planes=x4, width=512),
+            Bottleneck(inplanes=x4, planes=x4, width=512)
         )
 
 

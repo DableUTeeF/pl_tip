@@ -6,7 +6,6 @@ from sklearn.model_selection import train_test_split
 import functools
 from PIL import Image
 import torchvision.transforms as transforms
-from imageio import imread
 import numpy as np
 import argparse
 import pickle
@@ -19,7 +18,7 @@ def split(json_path):
     group_by_id = dict()
     for record in caption_all:
         # check if image file doesn't exist
-        if not os.path.exists(os.path.join("/aicity/data/CUHK-PEDES/imgs", record["file_path"])):
+        if not os.path.exists(os.path.join('/home/palm/PycharmProjects/text_image_retrieval/CUHK-PEDES/imgs', record["file_path"])):
             continue
         # if record["file_path"].split("/")[0] not in ["test_query", "train_query"]:
         #     continue
@@ -59,7 +58,7 @@ class TIPCB_data(Dataset):
         item = self.data[index] # dict of {id, file_path, caption}
 
         # read image and transform
-        img = Image.open(os.path.join("/aicity/data/CUHK-PEDES/imgs", item["file_path"]))
+        img = Image.open(os.path.join('/home/palm/PycharmProjects/text_image_retrieval/CUHK-PEDES/imgs', item["file_path"]))
         if self.train:
             img = self.transform_train(img)
         else:
