@@ -10,7 +10,7 @@ import numpy as np
 import argparse
 import pickle
 
-def split(json_path):
+def split(json_path, args):
     with open(json_path, "rb") as f:
         caption_all = json.load(f)
 
@@ -18,7 +18,7 @@ def split(json_path):
     group_by_id = dict()
     for record in caption_all:
         # check if image file doesn't exist
-        if not os.path.exists(os.path.join('/home/palm/PycharmProjects/text_image_retrieval/CUHK-PEDES/imgs', record["file_path"])):
+        if not os.path.exists(os.path.join(args.image_root_path, record["file_path"])):
             continue
         # if record["file_path"].split("/")[0] not in ["test_query", "train_query"]:
         #     continue
@@ -53,12 +53,13 @@ class TIPCB_data(Dataset):
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ])
         self.train = train
+        self.args = args
     
     def __getitem__(self, index):
         item = self.data[index] # dict of {id, file_path, caption}
 
         # read image and transform
-        img = Image.open(os.path.join('/home/palm/PycharmProjects/text_image_retrieval/CUHK-PEDES/imgs', item["file_path"]))
+        img = Image.open(os.path.join(self.args.image_root_path, item["file_path"]))
         if self.train:
             img = self.transform_train(img)
         else:

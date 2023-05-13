@@ -35,7 +35,7 @@ parser.add_argument('--num_epoches', type=int, default=100)
 parser.add_argument('--epsilon', type=float, default=1e-8)
 
 # the root of the data folder
-parser.add_argument("--image_root_path", type=str, default='/home/palm/PycharmProjects/text_image_retrieval/CUHK-PEDES/imgs')
+parser.add_argument("--image_root_path", type=str, default='/media/palm/BiggerData/caption/CUHK-PEDES/CUHK-PEDES/imgs')
 
 parser.add_argument('--adam_lr', type=float, default=0.003, help='the learning rate of adam')
 parser.add_argument('--wd', type=float, default=0.00004)
@@ -85,7 +85,7 @@ tb_logger = pl_loggers.TensorBoardLogger(args.log_dir)
 
 if args.language == "en":
     tokenizer = AutoTokenizer.from_pretrained('sentence-transformers/all-mpnet-base-v2', model_max_length=args.max_length)
-    train_list, val_list = split('/home/palm/PycharmProjects/text_image_retrieval/CUHK-PEDES/caption_all.json')
+    train_list, val_list = split('/media/palm/BiggerData/caption/CUHK-PEDES/CUHK-PEDES/caption_all.json', args)
     train_dataset = TIPCB_data(train_list, tokenizer, args)
     val_dataset = TIPCB_data(val_list, tokenizer, args, train=False)
 # elif # removed for Thai language
@@ -108,7 +108,9 @@ trainer = pl.Trainer(amp_level='O1', amp_backend="apex",
                         callbacks=[checkpoint_callback],
                         gpus=1,
                         accumulate_grad_batches=1,
-                        logger=tb_logger)
+                        logger=tb_logger,
+                        resume_from_checkpoint='/media/palm/Data/tipcb/checkpoint/31/epoch=24-val_rank1=0.4929-val_loss=11.1514.ckpt'
+                        )
 trainer.fit(model, train_dl, val_dl)
 
 
