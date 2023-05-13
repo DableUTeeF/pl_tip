@@ -65,7 +65,7 @@ class ResNet_text_50(nn.Module):
             norm_layer = nn.BatchNorm2d
         self._norm_layer = norm_layer
 
-        self.inplanes = 768
+        self.inplanes = 384
         x3 = 1024
         x4 = 2048
 

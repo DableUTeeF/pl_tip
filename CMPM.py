@@ -43,17 +43,26 @@ class Loss(nn.Module):
 
         return cmpm_loss
 
-    def forward(self, img_f3, img_f4, img_f41, img_f42, img_f43, img_f44, img_f45, img_f46,
-                txt_f3, txt_f4, txt_f41, txt_f42, txt_f43, txt_f44, txt_f45, txt_f46, labels):
+    def compute_triplet_loss(self, image_pos, text, image_neg):
+        distance_pos = F.pairwise_distance(image_pos, text, p=2)
+        distance_neg = F.pairwise_distance(image_neg, text, p=2)
+
+        losses = F.relu(distance_pos - distance_neg + 5)
+        return losses.mean()
+
+    def forward(self, img_f3_1, img_f4_1, img_f41_1, img_f42_1, img_f43_1, img_f44_1, img_f45_1, img_f46_1,
+            img_f3_2, img_f4_2, img_f41_2, img_f42_2, img_f43_2, img_f44_2, img_f45_2, img_f46_2,
+            txt_f3, txt_f4, txt_f41, txt_f42, txt_f43, txt_f44, txt_f45, txt_f46
+            ):
         loss = 0.0
 
-        loss = self.compute_cmpm_loss(img_f3, txt_f3, labels) \
-                + self.compute_cmpm_loss(img_f41, txt_f41, labels) \
-                + self.compute_cmpm_loss(img_f42, txt_f42, labels) \
-                + self.compute_cmpm_loss(img_f43, txt_f43, labels) \
-                + self.compute_cmpm_loss(img_f44, txt_f44, labels) \
-                + self.compute_cmpm_loss(img_f45, txt_f45, labels) \
-                + self.compute_cmpm_loss(img_f46, txt_f46, labels) \
-                + self.compute_cmpm_loss(img_f4, txt_f4, labels)
+        loss = self.compute_triplet_loss(img_f3_1, txt_f3, img_f3_2) \
+                + self.compute_triplet_loss(img_f41_1, txt_f41, img_f41_2) \
+                + self.compute_triplet_loss(img_f42_1, txt_f42, img_f42_2) \
+                + self.compute_triplet_loss(img_f43_1, txt_f43, img_f43_2) \
+                + self.compute_triplet_loss(img_f44_1, txt_f44, img_f44_2) \
+                + self.compute_triplet_loss(img_f45_1, txt_f45, img_f45_2) \
+                + self.compute_triplet_loss(img_f46_1, txt_f46, img_f46_2) \
+                + self.compute_triplet_loss(img_f4_1, txt_f4, img_f4_2)
 
         return loss

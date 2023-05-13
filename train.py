@@ -2,7 +2,7 @@ from model import TIPCB
 import argparse
 import torch
 from transformers import AutoTokenizer
-from dataset import split, TIPCB_data, NPZ_data
+from dataset import split, TIPCB_data, Triplet_data
 from torch.utils.data import DataLoader
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 import pytorch_lightning as pl
@@ -84,9 +84,9 @@ pl.seed_everything(0)
 tb_logger = pl_loggers.TensorBoardLogger(args.log_dir)
 
 if args.language == "en":
-    tokenizer = AutoTokenizer.from_pretrained('sentence-transformers/all-mpnet-base-v2', model_max_length=args.max_length)
+    tokenizer = AutoTokenizer.from_pretrained('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2', model_max_length=args.max_length)
     train_list, val_list = split('/media/palm/BiggerData/caption/CUHK-PEDES/CUHK-PEDES/caption_all.json', args)
-    train_dataset = TIPCB_data(train_list, tokenizer, args)
+    train_dataset = Triplet_data(train_list, tokenizer, args)
     val_dataset = TIPCB_data(val_list, tokenizer, args, train=False)
 # elif # removed for Thai language
 
@@ -109,7 +109,7 @@ trainer = pl.Trainer(amp_level='O1', amp_backend="apex",
                         gpus=1,
                         accumulate_grad_batches=1,
                         logger=tb_logger,
-                        resume_from_checkpoint='/media/palm/Data/tipcb/checkpoint/31/epoch=24-val_rank1=0.4929-val_loss=11.1514.ckpt'
+                        # resume_from_checkpoint='/media/palm/Data/tipcb/checkpoint/31/epoch=24-val_rank1=0.4929-val_loss=11.1514.ckpt'
                         )
 trainer.fit(model, train_dl, val_dl)
 

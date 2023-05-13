@@ -91,7 +91,7 @@ class TIPCB(pl.LightningModule):
 
         self.compute_loss = Loss(args)
 
-        self.text_embed = AutoModel.from_pretrained('sentence-transformers/all-mpnet-base-v2')
+        self.text_embed = AutoModel.from_pretrained('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')
         # self.text_embed.train()
         self.text_embed.eval()
         # self.BERT = True
@@ -151,30 +151,73 @@ class TIPCB(pl.LightningModule):
         else:
             return img_f4, txt_f4
 
+    def image_feature(self, img, training=False):
+        _, _, img3, img4 = self.model_img(img)
+        img_f3 = self.max_pool(img3).squeeze(dim=-1).squeeze(dim=-1)
+        img_f41 = self.max_pool(img4[:, :, 0:4, :]).squeeze(dim=-1).squeeze(dim=-1)
+        img_f42 = self.max_pool(img4[:, :, 4:8, :]).squeeze(dim=-1).squeeze(dim=-1)
+        img_f43 = self.max_pool(img4[:, :, 8:12, :]).squeeze(dim=-1).squeeze(dim=-1)
+        img_f44 = self.max_pool(img4[:, :, 12:16, :]).squeeze(dim=-1).squeeze(dim=-1)
+        img_f45 = self.max_pool(img4[:, :, 16:20, :]).squeeze(dim=-1).squeeze(dim=-1)
+        img_f46 = self.max_pool(img4[:, :, 20:, :]).squeeze(dim=-1).squeeze(dim=-1)
+        img_f4 = self.max_pool(img4).squeeze(dim=-1).squeeze(dim=-1)
+        if training:
+            return img_f3, img_f4, img_f41, img_f42, img_f43, img_f44, img_f45, img_f46
+        return img_f4
+
+    def text_feature(self, txt, mask, training=False):
+        with torch.no_grad():
+            txt = self.text_embed(txt, attention_mask=mask)
+            txt = txt[0] # (batch_size, sequence_length, hidden_size)
+            txt = txt.unsqueeze(1) # Bx1xLxH
+            txt = txt.permute(0, 3, 1, 2) # BxHx1xL
+        txt3, txt41, txt42, txt43, txt44, txt45, txt46 = self.model_txt(txt)
+        txt_f3 = self.max_pool(txt3).squeeze(dim=-1).squeeze(dim=-1)
+        txt_f41 = self.max_pool(txt41)
+        txt_f42 = self.max_pool(txt42)
+        txt_f43 = self.max_pool(txt43)
+        txt_f44 = self.max_pool(txt44)
+        txt_f45 = self.max_pool(txt45)
+        txt_f46 = self.max_pool(txt46)
+        txt_f4 = self.max_pool(torch.cat([txt_f41, txt_f42, txt_f43, txt_f44, txt_f45, txt_f46], dim=2)).squeeze(dim=-1).squeeze(dim=-1)
+        txt_f41 = txt_f41.squeeze(dim=-1).squeeze(dim=-1)
+        txt_f42 = txt_f42.squeeze(dim=-1).squeeze(dim=-1)
+        txt_f43 = txt_f43.squeeze(dim=-1).squeeze(dim=-1)
+        txt_f44 = txt_f44.squeeze(dim=-1).squeeze(dim=-1)
+        txt_f45 = txt_f45.squeeze(dim=-1).squeeze(dim=-1)
+        txt_f46 = txt_f46.squeeze(dim=-1).squeeze(dim=-1)
+        if training:
+            return txt_f3, txt_f4, txt_f41, txt_f42, txt_f43, txt_f44, txt_f45, txt_f46
+        return txt_f4
+
+
     def training_step(self, batch, idx):
-        img, txt, labels, mask = batch
-        img_f3, img_f4, img_f41, img_f42, img_f43, img_f44, img_f45, img_f46, \
-                    txt_f3, txt_f4, txt_f41, txt_f42, txt_f43, txt_f44, txt_f45, txt_f46 = self._forward(img, txt, mask, training=True)
+        img, txt, img2, mask = batch
+        img_f3_1, img_f4_1, img_f41_1, img_f42_1, img_f43_1, img_f44_1, img_f45_1, img_f46_1 = self.image_feature(img, training=True) 
+        img_f3_2, img_f4_2, img_f41_2, img_f42_2, img_f43_2, img_f44_2, img_f45_2, img_f46_2 = self.image_feature(img2, training=True) 
+        txt_f3, txt_f4, txt_f41, txt_f42, txt_f43, txt_f44, txt_f45, txt_f46 = self.text_feature(txt, mask, training=True)
 
         loss = self.compute_loss(
-            img_f3, img_f4, img_f41, img_f42, img_f43, img_f44, img_f45, img_f46,
-            txt_f3, txt_f4, txt_f41, txt_f42, txt_f43, txt_f44, txt_f45, txt_f46, labels)
+            img_f3_1, img_f4_1, img_f41_1, img_f42_1, img_f43_1, img_f44_1, img_f45_1, img_f46_1,
+            img_f3_2, img_f4_2, img_f41_2, img_f42_2, img_f43_2, img_f44_2, img_f45_2, img_f46_2,
+            txt_f3, txt_f4, txt_f41, txt_f42, txt_f43, txt_f44, txt_f45, txt_f46)
 
         self.log('train_loss', loss)
         return loss
 
     def validation_step(self, batch, idx):
         img, txt, labels, mask = batch
-        img_f3, img_f4, img_f41, img_f42, img_f43, img_f44, img_f45, img_f46, \
-                    txt_f3, txt_f4, txt_f41, txt_f42, txt_f43, txt_f44, txt_f45, txt_f46 = self._forward(img, txt, mask, training=True)
+        img_f3_1, img_f4_1, img_f41_1, img_f42_1, img_f43_1, img_f44_1, img_f45_1, img_f46_1 = self.image_feature(img, training=True) 
+        txt_f3, txt_f4, txt_f41, txt_f42, txt_f43, txt_f44, txt_f45, txt_f46 = self.text_feature(txt, mask, training=True)
+
+        loss = self.compute_loss(
+            img_f3_1, img_f4_1, img_f41_1, img_f42_1, img_f43_1, img_f44_1, img_f45_1, img_f46_1,
+            img_f3_1, img_f4_1, img_f41_1, img_f42_1, img_f43_1, img_f44_1, img_f45_1, img_f46_1,
+            txt_f3, txt_f4, txt_f41, txt_f42, txt_f43, txt_f44, txt_f45, txt_f46)
 
         interval = int(img.shape[0])
 
-        loss = self.compute_loss(
-            img_f3, img_f4, img_f41, img_f42, img_f43, img_f44, img_f45, img_f46,
-            txt_f3, txt_f4, txt_f41, txt_f42, txt_f43, txt_f44, txt_f45, txt_f46, labels)
-
-        self.images_bank[self.index: self.index + interval] = img_f4
+        self.images_bank[self.index: self.index + interval] = img_f4_1
         self.text_bank[self.index: self.index + interval] = txt_f4
         self.labels_bank[self.index:self.index + interval] = labels
         self.index += interval

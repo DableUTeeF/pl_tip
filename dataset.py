@@ -80,6 +80,36 @@ class TIPCB_data(Dataset):
     def __len__(self):
         return len(self.data)
 
+class Triplet_data(TIPCB_data):
+    def __getitem__(self, index):
+        item = self.data[index] # dict of {id, file_path, caption}
+
+        # read image and transform
+        img = Image.open(os.path.join(self.args.image_root_path, item["file_path"]))
+        if self.train:
+            img = self.transform_train(img)
+        else:
+            img = self.transform_val(img)
+
+        tok = self.tokenizer(item["caption"], truncation=True, padding='max_length')
+        input_ids = tok["input_ids"]
+        attention_mask = tok["attention_mask"]
+        caption = torch.tensor(input_ids, dtype=torch.long)
+        attention_mask = torch.tensor(attention_mask, dtype=torch.long)
+
+        idx2 = np.random.randint(len(self))
+        item2 = self.data[idx2]
+        while item2["id"] == item["id"]:
+            idx2 = np.random.randint(len(self))
+            item2 = self.data[idx2]
+        img2 = Image.open(os.path.join(self.args.image_root_path, item2["file_path"]))
+        if self.train:
+            img2 = self.transform_train(img2)
+        else:
+            img2 = self.transform_val(img2)
+        return img, caption, img2, attention_mask
+
+
 class NPZ_data(Dataset):
     def __init__(self, data, args, train=True):
         self.image_root_path = args.image_root_path
